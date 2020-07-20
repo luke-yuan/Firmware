@@ -51,6 +51,7 @@
 #include <uORB/Publication.hpp>
 
 using namespace matrix;
+using namespace time_literals;
 
 VtolAttitudeControl::VtolAttitudeControl() :
 	WorkItem(MODULE_NAME, px4::wq_configurations::rate_ctrl),
@@ -341,6 +342,15 @@ VtolAttitudeControl::Run()
 		exit_and_cleanup();
 		return;
 	}
+
+	const hrt_abstime now = hrt_absolute_time();
+
+	// prevent excessive scheduling (> 500 Hz)
+	if (now - _last_run_timestamp < 2_ms) {
+		return;
+	}
+
+	_last_run_timestamp = now;
 
 	if (!_initialized) {
 		parameters_update();  // initialize parameter cache
